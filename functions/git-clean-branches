@@ -1,0 +1,196 @@
+#!/usr/bin/env bash
+
+set -e
+
+VERSION="1.0.0"
+
+show_help() {
+    cat << EOF
+git-clean-branches - Interactive git branch deletion tool
+
+Usage: git-clean-branches [OPTIONS]
+
+OPTIONS:
+    -f, --force     Force delete branches (even if not fully merged)
+    -h, --help      Show this help message
+    -v, --version   Show version
+
+DESCRIPTION:
+    Interactively select and delete local git branches.
+    Shows branch name, last commit date, and commit message.
+    Automatically excludes current branch and main/master branches.
+
+EXAMPLES:
+    git-clean-branches          # Safe delete (only merged branches)
+    git-clean-branches --force  # Force delete (including unmerged)
+    gcb                         # Using alias (if configured)
+
+EOF
+}
+
+check_dependencies() {
+    if ! command -v gum &> /dev/null; then
+        echo "❌ Error: gum is required but not installed."
+        echo ""
+        echo "Install gum via Homebrew:"
+        echo "  brew install gum"
+        echo ""
+        echo "Or visit: https://github.com/charmbracelet/gum"
+        return 1
+    fi
+
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then
+        echo "❌ Error: Not in a git repository"
+        return 1
+    fi
+}
+
+get_current_branch() {
+    git rev-parse --abbrev-ref HEAD 2>/dev/null
+}
+
+get_protected_branches() {
+    echo "main master develop development"
+}
+
+get_branches_with_info() {
+    local current_branch="$1"
+    local protected_branches="$2"
+
+    git for-each-ref \
+        --format='%(refname:short)|%(committerdate:relative)|%(subject)' \
+        refs/heads/ | while IFS='|' read -r branch date message; do
+
+        if [[ "$branch" == "$current_branch" ]]; then
+            continue
+        fi
+
+        if [[ " $protected_branches " =~ " $branch " ]]; then
+            continue
+        fi
+
+        printf "%-30s  \033[90m(%s)\033[0m  %s\n" "$branch" "$date" "${message:0:60}"
+    done
+}
+
+get_branch_names() {
+    local current_branch="$1"
+    local protected_branches="$2"
+
+    git for-each-ref --format='%(refname:short)' refs/heads/ | while read -r branch; do
+        if [[ "$branch" == "$current_branch" ]]; then
+            continue
+        fi
+
+        if [[ " $protected_branches " =~ " $branch " ]]; then
+            continue
+        fi
+
+        echo "$branch"
+    done
+}
+
+main() {
+    local force_delete=false
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -f|--force)
+                force_delete=true
+                shift
+                ;;
+            -h|--help)
+                show_help
+                return 0
+                ;;
+            -v|--version)
+                echo "git-clean-branches version $VERSION"
+                return 0
+                ;;
+            *)
+                echo "Unknown option: $1"
+                echo "Use -h or --help for usage information"
+                return 1
+                ;;
+        esac
+    done
+
+    check_dependencies || return 1
+
+    local current_branch
+    current_branch=$(get_current_branch)
+
+    local protected_branches
+    protected_branches=$(get_protected_branches)
+
+    echo "🌿 Interactive Branch Cleanup"
+    echo ""
+    echo "Current branch: \033[1;32m$current_branch\033[0m"
+    echo "Protected branches: \033[1;33m$protected_branches\033[0m"
+    echo ""
+
+    local branch_list
+    branch_list=$(get_branch_names "$current_branch" "$protected_branches")
+
+    if [[ -z "$branch_list" ]]; then
+        echo "✨ No branches to delete!"
+        return 0
+    fi
+
+    echo "Select branches to delete (use Space to select, Enter to confirm):"
+    echo ""
+
+    local branches_display
+    branches_display=$(get_branches_with_info "$current_branch" "$protected_branches")
+
+    local selected_branches
+    selected_branches=$(echo "$branches_display" | gum choose --no-limit --height=20)
+
+    if [[ -z "$selected_branches" ]]; then
+        echo ""
+        echo "✋ No branches selected. Exiting."
+        return 0
+    fi
+
+    local branches_to_delete=()
+    while IFS= read -r line; do
+        branch_name=$(echo "$line" | awk '{print $1}')
+        branches_to_delete+=("$branch_name")
+    done <<< "$selected_branches"
+
+    echo ""
+    echo "📋 Branches to delete:"
+    printf '%s\n' "${branches_to_delete[@]}" | sed 's/^/  • /'
+    echo ""
+
+    local delete_flag="-d"
+    local delete_type="safe delete"
+    if [[ "$force_delete" == true ]]; then
+        delete_flag="-D"
+        delete_type="force delete"
+    fi
+
+    if gum confirm "Delete ${#branches_to_delete[@]} branch(es) using $delete_type?"; then
+        echo ""
+        local deleted=0
+        local failed=0
+
+        for branch in "${branches_to_delete[@]}"; do
+            if git branch "$delete_flag" "$branch" 2>/dev/null; then
+                echo "✅ Deleted: $branch"
+                ((deleted++))
+            else
+                echo "❌ Failed: $branch (try --force for unmerged branches)"
+                ((failed++))
+            fi
+        done
+
+        echo ""
+        echo "🎉 Summary: $deleted deleted, $failed failed"
+    else
+        echo ""
+        echo "✋ Operation cancelled."
+    fi
+}
+
+main "$@"
