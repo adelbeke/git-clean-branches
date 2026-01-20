@@ -2,6 +2,9 @@
 
 Interactive git branch deletion tool for ZSH with a beautiful UI.
 
+![git-clean-branches](https://github.com/user-attachments/assets/1d5ed676-1671-4840-931a-5d5e5104f78e)
+
+
 ## Features
 
 - 🎯 **Interactive selection** - Use checkboxes to select/unselect branches
@@ -9,27 +12,6 @@ Interactive git branch deletion tool for ZSH with a beautiful UI.
 - 🛡️ **Safety first** - Automatically protects current branch and main/master
 - ⚡ **Fast and smooth** - Powered by [gum](https://github.com/charmbracelet/gum)
 - 🎨 **Beautiful UI** - Clean, modern interface with colors
-
-## Preview
-
-```
-🌿 Interactive Branch Cleanup
-
-Current branch: main
-Protected branches: main master develop development
-
-Select branches to delete (use Space to select, Enter to confirm):
-
-  feature-login              (2 days ago)     Fix login validation
-  bugfix-header              (1 week ago)     Update header styles
-  test-branch                (3 months ago)   Initial test setup
-
-📋 Branches to delete:
-  • feature-login
-  • test-branch
-
-Delete 2 branch(es) using safe delete? (y/N)
-```
 
 ## Installation
 
