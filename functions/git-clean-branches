@@ -125,8 +125,8 @@ main() {
 
     echo "🌿 Interactive Branch Cleanup"
     echo ""
-    echo "Current branch: \033[1;32m$current_branch\033[0m"
-    echo "Protected branches: \033[1;33m$protected_branches\033[0m"
+    echo -e "Current branch: \033[1;32m$current_branch\033[0m"
+    echo -e "Protected branches: \033[1;33m$protected_branches\033[0m"
     echo ""
 
     local branch_list
