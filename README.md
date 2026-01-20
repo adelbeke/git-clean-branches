@@ -46,7 +46,7 @@ brew install gum
 1. Clone this repository into Oh My Zsh's custom plugins directory:
 
 ```bash
-git clone https://github.com/yourusername/git-clean-branches \
+git clone https://github.com/adelbeke/git-clean-branches \
     ~/.oh-my-zsh/custom/plugins/git-clean-branches
 ```
 
@@ -67,7 +67,7 @@ source ~/.zshrc
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/git-clean-branches ~/git-clean-branches
+git clone https://github.com/adelbeke/git-clean-branches ~/git-clean-branches
 ```
 
 2. Source the plugin in your `.zshrc`:
